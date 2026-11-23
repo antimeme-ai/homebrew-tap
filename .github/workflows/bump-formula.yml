@@ -1,0 +1,245 @@
+name: Bump Homebrew Formula
+
+on:
+  workflow_dispatch:
+    inputs:
+      formula:
+        description: Formula to update
+        required: true
+        type: choice
+        options:
+          - mp-outpost
+          - blackbird
+      version:
+        description: Release tag (e.g. v0.3.0)
+        required: true
+        type: string
+      manifest_url:
+        description: Optional override URL for release-manifest.json
+        required: false
+        type: string
+        default: ""
+      create_pr:
+        description: Open a pull request instead of pushing directly to main
+        required: false
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      formula:
+        description: Formula to update (mp-outpost or blackbird)
+        required: true
+        type: string
+      version:
+        description: Release tag (e.g. v0.3.0)
+        required: true
+        type: string
+      manifest_url:
+        description: Optional override URL for release-manifest.json
+        required: false
+        type: string
+        default: ""
+      create_pr:
+        description: Open a pull request instead of pushing directly to main
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+
+      - name: Render formula from release-manifest.json
+        env:
+          FORMULA: ${{ inputs.formula }}
+          RELEASE_TAG: ${{ inputs.version }}
+          MANIFEST_URL: ${{ inputs.manifest_url }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+          import urllib.request
+
+          formula = os.environ["FORMULA"].strip()
+          tag = os.environ["RELEASE_TAG"].strip()
+          manifest_url = os.environ.get("MANIFEST_URL", "").strip()
+
+          if formula not in ("mp-outpost", "blackbird"):
+              raise SystemExit(f"Unsupported formula: {formula}")
+
+          if not re.fullmatch(r"v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", tag):
+              raise SystemExit(f"Invalid release tag: {tag}")
+          version = tag.removeprefix("v")
+
+          repo_map = {
+              "mp-outpost": "antimemeai/multiplayer_outpost",
+              "blackbird": "antimemeai/blackbird",
+          }
+          repo = repo_map[formula]
+          if not manifest_url:
+              manifest_url = f"https://github.com/{repo}/releases/download/{tag}/release-manifest.json"
+          if not manifest_url.startswith("https://github.com/antimemeai/"):
+              raise SystemExit(f"Refusing untrusted manifest URL: {manifest_url}")
+
+          with urllib.request.urlopen(manifest_url, timeout=30) as resp:
+              manifest = json.loads(resp.read().decode("utf-8"))
+
+          if manifest.get("version") != tag:
+              raise SystemExit(f"Manifest version {manifest.get('version')!r} != {tag!r}")
+
+          by_target = {}
+          for asset in manifest.get("assets", []):
+              target = asset.get("target")
+              sha = asset.get("sha256", "")
+              if not re.fullmatch(r"[0-9a-f]{64}", sha):
+                  raise SystemExit(f"Invalid sha256 for {target}: {sha!r}")
+              by_target[target] = sha
+
+          if formula == "mp-outpost":
+              required = ("darwin-arm64", "linux-x86_64", "linux-arm64")
+              for t in required:
+                  if t not in by_target:
+                      raise SystemExit(f"Missing target {t} in manifest")
+              rendered = f'''class MpOutpost < Formula
+            desc "Standalone E2EE sidecar CLI, daemon, and MCP server for multiplayer.tech"
+            homepage "https://multiplayer.tech"
+            version "{version}"
+            license "MIT"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-darwin-arm64.tar.gz"
+                sha256 "{by_target["darwin-arm64"]}"
+              end
+            end
+
+            on_linux do
+              on_intel do
+                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-x86_64.tar.gz"
+                sha256 "{by_target["linux-x86_64"]}"
+              end
+              on_arm do
+                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-arm64.tar.gz"
+                sha256 "{by_target["linux-arm64"]}"
+              end
+            end
+
+            def install
+              bin.install "mp-outpost"
+              doc.install "README.md" if File.exist?("README.md")
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{{bin}}/mp-outpost --version")
+            end
+          end
+          '''
+              # Strip leading 10-space indent from triple-quoted template
+              rendered = "\n".join(line[10:] if line.startswith(" " * 10) else line for line in rendered.splitlines()) + "\n"
+          else:
+              required = ("darwin-arm64", "linux-x86_64")
+              for t in required:
+                  if t not in by_target:
+                      raise SystemExit(f"Missing target {t} in manifest")
+              arm_linux_block = ""
+              if "linux-arm64" in by_target:
+                  arm_linux_block = (
+                      '    on_arm do\n'
+                      '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-linux-arm64.tar.gz"\n'
+                      f'      sha256 "{by_target["linux-arm64"]}"\n'
+                      '    end\n'
+                  )
+              rendered = (
+                  'class Blackbird < Formula\n'
+                  '  desc "Native C++23 and Lua coding harness and multi-agent Command Post"\n'
+                  '  homepage "https://github.com/antimemeai/blackbird"\n'
+                  f'  version "{version}"\n'
+                  '  license "MIT"\n'
+                  '\n'
+                  '  on_macos do\n'
+                  '    on_arm do\n'
+                  '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-darwin-arm64.tar.gz"\n'
+                  f'      sha256 "{by_target["darwin-arm64"]}"\n'
+                  '    end\n'
+                  '  end\n'
+                  '\n'
+                  '  on_linux do\n'
+                  '    on_intel do\n'
+                  '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-linux-x86_64.tar.gz"\n'
+                  f'      sha256 "{by_target["linux-x86_64"]}"\n'
+                  '    end\n'
+                  f'{arm_linux_block}'
+                  '  end\n'
+                  '\n'
+                  '  def install\n'
+                  '    # Keep the full relocatable release tree intact inside libexec so\n'
+                  '    # $ORIGIN/../lib RPATH on Linux and share/blackbird/{programs,assets,profiles}\n'
+                  '    # resolve relative to libexec/bin/blackbird without polluting HOMEBREW_PREFIX.\n'
+                  '    libexec.install Dir["*"]\n'
+                  '\n'
+                  '    (bin/"blackbird").write <<~SH\n'
+                  '      #!/bin/sh\n'
+                  '      set -eu\n'
+                  '      export BLACKBIRD_SPRITE_ASSET="${BLACKBIRD_SPRITE_ASSET:-#{libexec}/share/blackbird/assets/sr71.png}"\n'
+                  '      exec "#{libexec}/scripts/blackbird" "$@"\n'
+                  '    SH\n'
+                  '    chmod 0755, bin/"blackbird"\n'
+                  '  end\n'
+                  '\n'
+                  '  test do\n'
+                  '    assert_match "blackbird ", shell_output("#{bin}/blackbird --version")\n'
+                  '    assert_path_exists libexec/"share/blackbird/assets/sr71.png"\n'
+                  '    assert_path_exists libexec/"share/blackbird/programs/turn.lua"\n'
+                  '  end\n'
+                  'end\n'
+              )
+
+          out_path = pathlib.Path("Formula") / f"{formula}.rb"
+          out_path.write_text(rendered, encoding="utf-8")
+          print(f"Updated {out_path} to {version}")
+          PY
+
+      - name: Verify Ruby syntax
+        env:
+          FORMULA: ${{ inputs.formula }}
+        run: ruby -c "Formula/${FORMULA}.rb"
+
+      - name: Commit or open pull request
+        env:
+          FORMULA: ${{ inputs.formula }}
+          RELEASE_TAG: ${{ inputs.version }}
+          CREATE_PR: ${{ inputs.create_pr }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet "Formula/${FORMULA}.rb"; then
+            echo "Formula/${FORMULA}.rb is already up to date for ${RELEASE_TAG}"
+            exit 0
+          fi
+          git config user.name "antimeme-release-bot"
+          git config user.email "ops@antimeme.ai"
+          if [ "${CREATE_PR}" = "true" ]; then
+            BRANCH="bump/${FORMULA}-${RELEASE_TAG}"
+            git checkout -B "${BRANCH}"
+            git add "Formula/${FORMULA}.rb"
+            git commit -m "${FORMULA}: bump to ${RELEASE_TAG}"
+            git push -u origin "${BRANCH}" --force-with-lease
+            gh pr create \
+              --title "${FORMULA}: bump to ${RELEASE_TAG}" \
+              --body "Automated formula update from \`${RELEASE_TAG}\` \`release-manifest.json\`." \
+              --head "${BRANCH}" \
+              --base main || true
+          else
+            git add "Formula/${FORMULA}.rb"
+            git commit -m "${FORMULA}: bump to ${RELEASE_TAG}"
+            git push origin HEAD:main
+          fi
