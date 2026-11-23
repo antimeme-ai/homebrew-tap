@@ -68,6 +68,7 @@ jobs:
           import pathlib
           import re
           import sys
+          import urllib.parse
           import urllib.request
 
           formula = os.environ["FORMULA"].strip()
@@ -77,7 +78,7 @@ jobs:
           if formula not in ("mp-outpost", "blackbird"):
               raise SystemExit(f"Unsupported formula: {formula}")
 
-          if not re.fullmatch(r"v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", tag):
+          if not re.fullmatch(r"v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", tag) or ".." in tag:
               raise SystemExit(f"Invalid release tag: {tag}")
           version = tag.removeprefix("v")
 
@@ -86,12 +87,35 @@ jobs:
               "blackbird": "antimemeai/blackbird",
           }
           repo = repo_map[formula]
+          expected_path = f"/{repo}/releases/download/{tag}/release-manifest.json"
           if not manifest_url:
-              manifest_url = f"https://github.com/{repo}/releases/download/{tag}/release-manifest.json"
-          if not manifest_url.startswith("https://github.com/antimemeai/"):
+              manifest_url = f"https://github.com{expected_path}"
+
+          parsed = urllib.parse.urlsplit(manifest_url)
+          if (
+              parsed.scheme != "https"
+              or parsed.netloc != "github.com"
+              or parsed.username is not None
+              or parsed.password is not None
+              or parsed.query != ""
+              or parsed.fragment != ""
+              or ".." in parsed.path
+              or "%" in parsed.path
+              or parsed.path != expected_path
+          ):
               raise SystemExit(f"Refusing untrusted manifest URL: {manifest_url}")
 
-          with urllib.request.urlopen(manifest_url, timeout=30) as resp:
+          class SafeGitHubRedirectHandler(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  rp = urllib.parse.urlsplit(newurl)
+                  host = (rp.hostname or "").lower()
+                  allowed = host == "github.com" or host.endswith(".githubusercontent.com")
+                  if rp.scheme != "https" or not allowed or rp.username or rp.password:
+                      raise SystemExit(f"Refusing unsafe redirect target: {newurl}")
+                  return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+          opener = urllib.request.build_opener(SafeGitHubRedirectHandler())
+          with opener.open(manifest_url, timeout=30) as resp:
               manifest = json.loads(resp.read().decode("utf-8"))
 
           if manifest.get("version") != tag:
@@ -99,8 +123,16 @@ jobs:
 
           by_target = {}
           for asset in manifest.get("assets", []):
-              target = asset.get("target")
+              target = asset.get("target", "")
+              filename = asset.get("filename", "")
               sha = asset.get("sha256", "")
+              if not re.fullmatch(r"[a-z0-9_-]+", target):
+                  raise SystemExit(f"Invalid target name: {target!r}")
+              expected_filename = f"{formula}-{tag}-{target}.tar.gz"
+              if filename != expected_filename:
+                  raise SystemExit(
+                      f"Unexpected filename {filename!r} for target {target!r} (expected {expected_filename!r})"
+                  )
               if not re.fullmatch(r"[0-9a-f]{64}", sha):
                   raise SystemExit(f"Invalid sha256 for {target}: {sha!r}")
               by_target[target] = sha
