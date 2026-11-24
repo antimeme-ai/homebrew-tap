@@ -1,20 +1,20 @@
 class Blackbird < Formula
   desc "Native C++23 and Lua coding harness and multi-agent Command Post"
   homepage "https://github.com/antimemeai/blackbird"
-  version "0.3.0"
+  version "0.4.0"
   license "MIT"
 
   on_macos do
     on_arm do
       url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-darwin-arm64.tar.gz"
-      sha256 "246f52dd2edc825f31464672af7481d23b27506ae5ba34316f187ca33aa00e9a"
+      sha256 "55abac5e8b164e1ee813cb50c713dcfa0c89deca443ceffd0acdf1e94d0f0acd"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-linux-x86_64.tar.gz"
-      sha256 "c3678e1b5beada0f67e1db2fd39af1de79fd6026c7142882312144d8ee0c09e4"
+      sha256 "d4b7a9189195510ac676f00b535f7e2aad93f988cee972aced6793ce7b9e5f8b"
     end
   end
 

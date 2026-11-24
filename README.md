@@ -22,7 +22,7 @@ brew install antimeme-ai/tap/blackbird
 | Formula | Version | Platforms | Upstream Repository |
 | --- | --- | --- | --- |
 | `mp-outpost` | `0.4.0` | macOS (`arm64`), Linux (`x86_64`, `arm64`) | [antimemeai/multiplayer_outpost](https://github.com/antimemeai/multiplayer_outpost) |
-| `blackbird` | `0.3.0` | macOS (`arm64`), Linux (`x86_64`) | [antimemeai/blackbird](https://github.com/antimemeai/blackbird) |
+| `blackbird` | `0.4.0` | macOS (`arm64`), Linux (`x86_64`) | [antimemeai/blackbird](https://github.com/antimemeai/blackbird) |
 
 ### Relocatable Bundle Layout (`blackbird`)
 
