@@ -1,24 +1,24 @@
 class MpOutpost < Formula
   desc "Standalone E2EE sidecar CLI, daemon, and MCP server for multiplayer.tech"
   homepage "https://multiplayer.tech"
-  version "0.3.0"
+  version "0.4.0"
   license "MIT"
 
   on_macos do
     on_arm do
       url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{version}/mp-outpost-v#{version}-darwin-arm64.tar.gz"
-      sha256 "bef0c38bd4edba76c250de914eedb39a8fcf43705266394e27c4afabb3f74649"
+      sha256 "8c884c44a1d0df70e8c0b994f6b09c73d693ebde8b35f2309c56136b643b0add"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{version}/mp-outpost-v#{version}-linux-x86_64.tar.gz"
-      sha256 "84c24a2cb54851434e2e243d15f65bcc769493298707022584e10888e0326d2f"
+      sha256 "f04dac5d3ee500a077815b38378288d1c878b218ac3c3a1d301d86eaf3707dab"
     end
     on_arm do
       url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{version}/mp-outpost-v#{version}-linux-arm64.tar.gz"
-      sha256 "4f9a3a1b322d07bcf6f20c0f50c690d9b9221f2f23f865782570378c8eae8f39"
+      sha256 "e016872244f8dc93f952861fc6446ba77bbb847e0a4d8e44d21d70bb95c96cb8"
     end
   end
 

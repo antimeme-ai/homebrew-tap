@@ -82,14 +82,18 @@ jobs:
               raise SystemExit(f"Invalid release tag: {tag}")
           version = tag.removeprefix("v")
 
-          repo_map = {
-              "mp-outpost": "antimemeai/multiplayer_outpost",
-              "blackbird": "antimemeai/blackbird",
+          repo_name_map = {
+              "mp-outpost": "multiplayer_outpost",
+              "blackbird": "blackbird",
           }
-          repo = repo_map[formula]
-          expected_path = f"/{repo}/releases/download/{tag}/release-manifest.json"
+          allowed_owners = ("antimemeai", "antimeme-ai")
+          repo_name = repo_name_map[formula]
+          allowed_paths = {
+              f"/{owner}/{repo_name}/releases/download/{tag}/release-manifest.json": owner
+              for owner in allowed_owners
+          }
           if not manifest_url:
-              manifest_url = f"https://github.com{expected_path}"
+              manifest_url = f"https://github.com/antimemeai/{repo_name}/releases/download/{tag}/release-manifest.json"
 
           parsed = urllib.parse.urlsplit(manifest_url)
           if (
@@ -101,9 +105,10 @@ jobs:
               or parsed.fragment != ""
               or ".." in parsed.path
               or "%" in parsed.path
-              or parsed.path != expected_path
+              or parsed.path not in allowed_paths
           ):
               raise SystemExit(f"Refusing untrusted manifest URL: {manifest_url}")
+          repo_owner = allowed_paths[parsed.path]
 
           class SafeGitHubRedirectHandler(urllib.request.HTTPRedirectHandler):
               def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -150,18 +155,18 @@ jobs:
 
             on_macos do
               on_arm do
-                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-darwin-arm64.tar.gz"
+                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-darwin-arm64.tar.gz"
                 sha256 "{by_target["darwin-arm64"]}"
               end
             end
 
             on_linux do
               on_intel do
-                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-x86_64.tar.gz"
+                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-x86_64.tar.gz"
                 sha256 "{by_target["linux-x86_64"]}"
               end
               on_arm do
-                url "https://github.com/antimemeai/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-arm64.tar.gz"
+                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-arm64.tar.gz"
                 sha256 "{by_target["linux-arm64"]}"
               end
             end
@@ -187,27 +192,27 @@ jobs:
               if "linux-arm64" in by_target:
                   arm_linux_block = (
                       '    on_arm do\n'
-                      '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-linux-arm64.tar.gz"\n'
+                      f'      url "https://github.com/{repo_owner}/blackbird/releases/download/v#{{version}}/blackbird-v#{{version}}-linux-arm64.tar.gz"\n'
                       f'      sha256 "{by_target["linux-arm64"]}"\n'
                       '    end\n'
                   )
               rendered = (
                   'class Blackbird < Formula\n'
                   '  desc "Native C++23 and Lua coding harness and multi-agent Command Post"\n'
-                  '  homepage "https://github.com/antimemeai/blackbird"\n'
+                  f'  homepage "https://github.com/{repo_owner}/blackbird"\n'
                   f'  version "{version}"\n'
                   '  license "MIT"\n'
                   '\n'
                   '  on_macos do\n'
                   '    on_arm do\n'
-                  '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-darwin-arm64.tar.gz"\n'
+                  f'      url "https://github.com/{repo_owner}/blackbird/releases/download/v#{{version}}/blackbird-v#{{version}}-darwin-arm64.tar.gz"\n'
                   f'      sha256 "{by_target["darwin-arm64"]}"\n'
                   '    end\n'
                   '  end\n'
                   '\n'
                   '  on_linux do\n'
                   '    on_intel do\n'
-                  '      url "https://github.com/antimemeai/blackbird/releases/download/v#{version}/blackbird-v#{version}-linux-x86_64.tar.gz"\n'
+                  f'      url "https://github.com/{repo_owner}/blackbird/releases/download/v#{{version}}/blackbird-v#{{version}}-linux-x86_64.tar.gz"\n'
                   f'      sha256 "{by_target["linux-x86_64"]}"\n'
                   '    end\n'
                   f'{arm_linux_block}'

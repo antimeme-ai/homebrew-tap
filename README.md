@@ -5,7 +5,7 @@ Official Homebrew tap for **Blackbird** and **`mp-outpost`** (`multiplayer.tech`
 ## Install
 
 ```sh
-brew tap antimemeai/tap
+brew tap antimeme-ai/tap
 brew install mp-outpost
 brew install blackbird
 ```
@@ -13,15 +13,15 @@ brew install blackbird
 Or directly in one command:
 
 ```sh
-brew install antimemeai/tap/mp-outpost
-brew install antimemeai/tap/blackbird
+brew install antimeme-ai/tap/mp-outpost
+brew install antimeme-ai/tap/blackbird
 ```
 
 ## Formulae
 
 | Formula | Version | Platforms | Upstream Repository |
 | --- | --- | --- | --- |
-| `mp-outpost` | `0.3.0` | macOS (`arm64`), Linux (`x86_64`, `arm64`) | [antimemeai/multiplayer_outpost](https://github.com/antimemeai/multiplayer_outpost) |
+| `mp-outpost` | `0.4.0` | macOS (`arm64`), Linux (`x86_64`, `arm64`) | [antimemeai/multiplayer_outpost](https://github.com/antimemeai/multiplayer_outpost) |
 | `blackbird` | `0.3.0` | macOS (`arm64`), Linux (`x86_64`) | [antimemeai/blackbird](https://github.com/antimemeai/blackbird) |
 
 ### Relocatable Bundle Layout (`blackbird`)
