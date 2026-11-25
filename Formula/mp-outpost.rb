@@ -1,5 +1,5 @@
 class MpOutpost < Formula
-  desc "Party sidecar CLI, second-window live chat, and 13-tool MCP server for multiplayer.tech"
+  desc "Party sidecar CLI, live chat, and 13-tool MCP server for multiplayer.tech"
   homepage "https://multiplayer.tech"
   version "0.5.0"
   license "MIT"
