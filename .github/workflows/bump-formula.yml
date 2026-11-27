@@ -83,7 +83,7 @@ jobs:
           version = tag.removeprefix("v")
 
           repo_name_map = {
-              "mp-outpost": "multiplayer_outpost",
+              "mp-outpost": "outpost",
               "blackbird": "blackbird",
           }
           allowed_owners = ("antimeme-ai", "antimemeai")
@@ -155,18 +155,18 @@ jobs:
 
             on_macos do
               on_arm do
-                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-darwin-arm64.tar.gz"
+                url "https://github.com/{repo_owner}/outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-darwin-arm64.tar.gz"
                 sha256 "{by_target["darwin-arm64"]}"
               end
             end
 
             on_linux do
               on_intel do
-                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-x86_64.tar.gz"
+                url "https://github.com/{repo_owner}/outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-x86_64.tar.gz"
                 sha256 "{by_target["linux-x86_64"]}"
               end
               on_arm do
-                url "https://github.com/{repo_owner}/multiplayer_outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-arm64.tar.gz"
+                url "https://github.com/{repo_owner}/outpost/releases/download/v#{{version}}/mp-outpost-v#{{version}}-linux-arm64.tar.gz"
                 sha256 "{by_target["linux-arm64"]}"
               end
             end
