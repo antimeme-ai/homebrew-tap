@@ -86,14 +86,14 @@ jobs:
               "mp-outpost": "multiplayer_outpost",
               "blackbird": "blackbird",
           }
-          allowed_owners = ("antimemeai", "antimeme-ai")
+          allowed_owners = ("antimeme-ai", "antimemeai")
           repo_name = repo_name_map[formula]
           allowed_paths = {
               f"/{owner}/{repo_name}/releases/download/{tag}/release-manifest.json": owner
               for owner in allowed_owners
           }
           if not manifest_url:
-              manifest_url = f"https://github.com/antimemeai/{repo_name}/releases/download/{tag}/release-manifest.json"
+              manifest_url = f"https://github.com/antimeme-ai/{repo_name}/releases/download/{tag}/release-manifest.json"
 
           parsed = urllib.parse.urlsplit(manifest_url)
           if (
