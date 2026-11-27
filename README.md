@@ -35,7 +35,7 @@ Inside a Blackbird session, invite friends or jump straight into a shared room:
 | Formula | Version | Platforms | Upstream Repository |
 | --- | --- | --- | --- |
 | `blackbird` | `0.9.1` | macOS (`arm64`), Linux (`x86_64`) | [antimeme-ai/blackbird](https://github.com/antimeme-ai/blackbird) |
-| `mp-outpost` | `0.7.0` | macOS (`arm64`), Linux (`x86_64`, `arm64`) | [antimeme-ai/outpost](https://github.com/antimeme-ai/outpost) |
+| `mp-outpost` | `0.7.1` | macOS (`arm64`), Linux (`x86_64`, `arm64`) | [antimeme-ai/outpost](https://github.com/antimeme-ai/outpost) |
 
 ### Relocatable Bundle Layout (`blackbird`)
 
